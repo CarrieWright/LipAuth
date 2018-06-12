@@ -14,7 +14,7 @@ from keras.layers.recurrent import GRU
 from keras.layers.wrappers import Bidirectional
 from keras.layers import Input, Lambda, Dense
 from keras import backend as K
-
+from keras.optimizers import SGD
 #import keras
 
 #keras.backend.set_image_data_format('channels_last')
@@ -48,9 +48,12 @@ class LipAuth(object):
                           
         sigmoid = Dense(1, activation='sigmoid')(distance)
         
+        sgd = SGD(0.01)
         self.lipAuth = Model([input_a, input_b], sigmoid)
-        self.lipAuth.compile(loss='binary_crossentropy', optimizer='adam')
-     
+        #self.lipAuth.compile(loss='binary_crossentropy', optimizer='adam')
+        self.lipAuth.compile(loss='binary_crossentropy', optimizer=sgd)
+
+ # this is used when retraining lipnet layers from conv3 onwards  
     def buildEmbeddingModel(self):
         lipnet = LipNet(img_c= self.img_c, img_w= self.img_w, img_h= self.img_h,\
                         frames_n= self.frames_n, absolute_max_string_len=32, \
@@ -63,22 +66,56 @@ class LipAuth(object):
         model = Model(lipnet.model.get_layer('the_input').input, \
                       lipnet.model.get_layer('bidirectional_2').output)
         
-        # Freeze all layers and compile the model
+        # Freeze all layers up to conv3 and compile the model
+        numLayersToFreeze = 14
         counter = 0
         for layer in model.layers:
-            layer.trainable = False
+            if counter < numLayersToFreeze:
+                
+                layer.trainable = False
+
+                
+                print(counter)
             counter +=1
-            #print(counter)
-            if counter > 20:
-                layer.backward_layer.trainable = False  
-                layer.forward_layer.trainable = False        
+    
     
         x = model.output
-        x = Bidirectional(GRU(64, return_sequences=False, \
+        x = Bidirectional(GRU(128, return_sequences=False, \
                     kernel_initializer='Orthogonal', name='gru3'), merge_mode='concat')(x)
         
         self.lipAuth_embedding = Model(model.input, x)
         self.lipAuth_embedding.summary()
+
+
+ # this was used when we didnt train any of the lipnet layers    
+#    def buildEmbeddingModel(self):
+#        lipnet = LipNet(img_c= self.img_c, img_w= self.img_w, img_h= self.img_h,\
+#                        frames_n= self.frames_n, absolute_max_string_len=32, \
+#                        output_size=28)
+#        
+#        lipnet.model.load_weights(self.weight_path)
+#        
+#        lipnet.model.summary()
+#              
+#        model = Model(lipnet.model.get_layer('the_input').input, \
+#                      lipnet.model.get_layer('bidirectional_2').output)
+#        
+#        # Freeze all layers and compile the model
+#        counter = 0
+#        for layer in model.layers:
+#            layer.trainable = False
+#            counter +=1
+#            #print(counter)
+#            if counter > 20:
+#                layer.backward_layer.trainable = False  
+#                layer.forward_layer.trainable = False        
+#    
+#        x = model.output
+#        x = Bidirectional(GRU(64, return_sequences=False, \
+#                    kernel_initializer='Orthogonal', name='gru3'), merge_mode='concat')(x)
+#        
+#        self.lipAuth_embedding = Model(model.input, x)
+#        self.lipAuth_embedding.summary()
 
     def euclidean_distance(self, vects):
         x, y = vects

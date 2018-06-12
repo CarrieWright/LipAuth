@@ -1,15 +1,21 @@
 name: LipAuth
 channels:
+- danielballan
 - anaconda-fusion
 - defaults
 dependencies:
+- pyav=v0.2.3=0
+- x264=20131217=2
 - alabaster=0.7.10=py36h174008c_0
 - appnope=0.1.0=py36hf537a9a_0
 - asn1crypto=0.24.0=py36_0
 - astroid=1.6.2=py36_0
+- attrs=17.4.0=py36_0
 - babel=2.5.3=py36_0
 - bleach=2.1.3=py36_0
+- bzip2=1.0.6=hd86a083_4
 - ca-certificates=2017.08.26=ha1e5d58_0
+- cairo=1.14.12=hab642c4_0
 - certifi=2018.1.18=py36_0
 - cffi=1.11.5=py36h342bebf_0
 - chardet=3.0.4=py36h96c241c_1
@@ -20,16 +26,25 @@ dependencies:
 - docutils=0.14=py36hbfde631_0
 - entrypoints=0.2.3=py36hd81d71f_2
 - expat=2.2.5=hb8e80ba_0
+- ffmpeg=3.4=h766ddd1_0
+- fontconfig=2.12.6=h9850fc5_0
+- freetype=2.8=h12048fb_1
 - gettext=0.19.8.1=h15daf44_3
 - glib=2.53.6=h33f6a65_2
+- graphite2=1.3.10=h337f25e_1
+- harfbuzz=1.7.6=h08e020e_0
+- hdf5=1.8.18=h017327d_1
 - html5lib=1.0.1=py36h2f9c1c0_0
 - icu=58.2=h4b95b61_1
 - idna=2.6=py36h8628d0a_1
 - imagesize=1.0.0=py36_0
+- intel-openmp=2018.0.0=8
 - ipykernel=4.8.2=py36_0
 - ipython=6.2.1=py36h3dda519_1
 - ipython_genutils=0.2.0=py36h241746c_0
+- ipywidgets=7.2.0=py36_0
 - isort=4.3.4=py36_0
+- jasper=1.900.1=h1f36771_4
 - jedi=0.11.1=py36_1
 - jinja2=2.10=py36hd36f9c5_0
 - jpeg=9b=he5867d9_2
@@ -41,16 +56,29 @@ dependencies:
 - libcxxabi=4.0.1=hebd6815_0
 - libedit=3.1=hb4e282d_0
 - libffi=3.2.1=h475c297_4
+- libgfortran=3.0.1=h93005f0_2
 - libiconv=1.15=hdd342a3_7
+- libopus=1.2.1=h169cedb_0
 - libpng=1.6.34=he12f830_0
+- libprotobuf=3.4.1=h326466f_0
 - libsodium=1.0.15=hd9e47c5_0
+- libtiff=4.0.9=h0dac147_0
+- libvpx=1.6.1=h057a404_0
+- libxml2=2.9.7=hab757c2_0
 - markupsafe=1.0=py36h3a1e703_1
 - mccabe=0.6.1=py36hdaeb55d_0
 - mistune=0.8.3=py36_0
+- mkl=2018.0.2=1
+- mkl_fft=1.0.1=py36h917ab60_0
+- mkl_random=1.0.1=py36h78cc56f_0
+- more-itertools=4.1.0=py36_0
 - nbconvert=5.3.1=py36h810822e_0
 - nbformat=4.4.0=py36h827af21_0
 - ncurses=6.0=hd04f020_2
+- notebook=5.4.1=py36_0
+- numpy=1.14.2=py36ha9ae307_1
 - numpydoc=0.7.0=py36he54d08e_0
+- opencv=3.3.1=py36hb620dcb_1
 - openssl=1.0.2n=hdbc3d79_0
 - packaging=17.1=py36_0
 - pandoc=1.19.2.1=ha5e8f32_1
@@ -60,9 +88,13 @@ dependencies:
 - pexpect=4.4.0=py36_0
 - pickleshare=0.7.4=py36hf512f8e_0
 - pip=9.0.1=py36_5
+- pixman=0.34.0=hca0a616_3
+- pluggy=0.6.0=py36hb1d0581_0
+- progressbar2=3.35.2=py36_0
 - prompt_toolkit=1.0.15=py36haeda067_0
 - psutil=5.4.3=py36h1de35cc_0
 - ptyprocess=0.5.2=py36he6521c3_0
+- py=1.5.3=py36_0
 - pycodestyle=2.3.1=py36h83e8646_0
 - pycparser=2.18=py36h724b2fc_1
 - pyflakes=1.6.0=py36hea45e83_0
@@ -72,8 +104,11 @@ dependencies:
 - pyparsing=2.2.0=py36hb281f35_0
 - pyqt=5.6.0=py36he5c6137_6
 - pysocks=1.6.8=py36_0
+- pytest=3.5.0=py36_0
+- pytest-runner=4.2=py36_0
 - python=3.6.4=hc167b69_3
 - python-dateutil=2.7.0=py36_0
+- python-utils=2.3.0=py36_0
 - python.app=2=py36h54569d5_7
 - pytz=2018.3=py36_0
 - pyzmq=17.0.0=py36h1de35cc_0
@@ -84,6 +119,7 @@ dependencies:
 - readline=7.0=hc1231fa_4
 - requests=2.18.4=py36h4516966_1
 - rope=0.10.7=py36h68959ac_0
+- send2trash=1.5.0=py36_0
 - setuptools=38.5.1=py36_0
 - simplegeneric=0.8.1=py36_2
 - sip=4.18.1=py36h2824476_2
@@ -94,6 +130,7 @@ dependencies:
 - sphinxcontrib-websupport=1.0.1=py36h92f4a7a_1
 - spyder=3.2.8=py36_0
 - sqlite=3.22.0=h3efe00b_0
+- terminado=0.8.1=py36_1
 - testpath=0.3.1=py36h625a49b_0
 - tk=8.6.7=h35a86e2_3
 - tornado=5.0=py36_0
@@ -103,6 +140,7 @@ dependencies:
 - wcwidth=0.1.7=py36h8c6ec74_0
 - webencodings=0.5.1=py36h3b9701d_1
 - wheel=0.30.0=py36h5eb2c71_1
+- widgetsnbextension=3.2.0=py36_0
 - wrapt=1.10.11=py36hc29e774_0
 - xz=5.2.3=h0278029_2
 - zeromq=4.2.3=h378b8a2_3
@@ -116,6 +154,7 @@ dependencies:
   - gast==0.2.0
   - grpcio==1.10.0
   - h5py==2.6.0
+  - imageio==2.1.2
   - ipython-genutils==0.2.0
   - jupyter-client==5.2.3
   - jupyter-core==4.4.0
@@ -123,13 +162,18 @@ dependencies:
   - lipnet (/Users/Carrie/git/LipNet)==0.1.6
   - markdown==2.6.11
   - matplotlib==2.0.0
+  - mkl-fft==1.0.0
+  - mkl-random==1.0.1
+  - moviepy==0.2.3.2
   - nltk==3.2.2
-  - numpy==1.14.2
   - olefile==0.45.1
+  - opencv-python==3.4.0.12
   - pillow==4.1.0
   - prompt-toolkit==1.0.15
   - protobuf==3.5.2.post1
   - pyyaml==3.12
+  - scikit-learn==0.19.1
+  - scikit-video==1.1.10
   - scipy==0.19.0
   - sk-video==1.1.7
   - tensorboard==1.6.0
@@ -137,6 +181,7 @@ dependencies:
   - tensorflow-gpu==1.0.1
   - termcolor==1.1.0
   - theano==0.9.0
+  - tqdm==4.11.2
   - werkzeug==0.14.1
 prefix: /Users/Carrie/anaconda/envs/LipAuth
 
