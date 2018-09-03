@@ -43,7 +43,7 @@ def get_pairs(path, vidListFile):
     return pairs, labels
 
 
-def get_closest_pairs(embedded_vids, embedded_labels, embedded_vidNames):
+def get_closest_pairs(embedded_vids, embedded_labels, vidNames, orig_vids):
     # embedded_vids is 128 embedding by num vids and labels (embedded_labels) to match
     # num_closest_negatives = number of negavtive examples per postive example
 
@@ -53,8 +53,12 @@ def get_closest_pairs(embedded_vids, embedded_labels, embedded_vidNames):
     final_01_labels = []
     
     embedded_vids = np.array(embedded_vids)
+    embedded_vids = np.squeeze(embedded_vids)
+    #print("embedded vid shape: :", embedded_vids.shape)
     embedded_labels = np.array(embedded_labels)
-    embedded_vidNames = np.array(embedded_vidNames)
+    
+    embedded_vidNames = np.array(vidNames)
+    
     
     numVids = len(embedded_vids)
     
@@ -88,7 +92,12 @@ def get_closest_pairs(embedded_vids, embedded_labels, embedded_vidNames):
         currentVid1 = stacked_vidNames[0][ind_val]
         currentVid2 = stacked_vidNames[1][ind_val]
         
-        final_pairs.append([stacked[0][ind_val], stacked[1][ind_val]])
+        currentVid1indexNameList= vidNames.index(currentVid1.strip())
+        currentVid2indexNameList= vidNames.index(currentVid2.strip())
+        
+        final_pairs.append([orig_vids[currentVid1indexNameList][np.newaxis], orig_vids[currentVid2indexNameList][np.newaxis]])
+        
+        #final_pairs.append([stacked[0][ind_val], stacked[1][ind_val]])
         final_labels.append([stacked_labels[0][ind_val ], stacked_labels[1][ind_val]])
         final_vidNames.append([currentVid1, currentVid2])
         final_01_labels.append(1)
@@ -115,6 +124,9 @@ def get_closest_pairs(embedded_vids, embedded_labels, embedded_vidNames):
             # distance so can check it!
             if currentVid1 in neg_names:
                 cur_dist = distances[neg_ind_val]
+                #print("current dist", cur_dist)
+                #print("closest dist", closest_dist)
+                #print("positive dist",pos_dist)
                 # the distance must be smaller than the current smallest AND 
                 # AND larger than the positive example's distance
                 if (cur_dist<closest_dist and cur_dist > pos_dist):
@@ -128,8 +140,21 @@ def get_closest_pairs(embedded_vids, embedded_labels, embedded_vidNames):
                     # it passed so reset all these values
                     closest_dist = cur_dist
                     single_labels = [stacked_labels[0][neg_ind_val],stacked_labels[1][neg_ind_val]]
-                    single_pair = [stacked[0][neg_ind_val],stacked[1][neg_ind_val]]  
+                    #single_pair = [stacked[0][neg_ind_val],stacked[1][neg_ind_val]]  
                     single_vidNames = [stacked_vidNames[0][neg_ind_val],stacked_vidNames[1][neg_ind_val]]
+                    
+                    
+
+                    indiciesOfVid1 = vidNames.index(single_vidNames[0].strip())
+                    indiciesOfVid2 = vidNames.index(single_vidNames[1].strip())
+                    
+                    single_pair = [orig_vids[indiciesOfVid1][np.newaxis], orig_vids[indiciesOfVid2][np.newaxis]]
+                    
+                    
+                    
+                    
+                    
+                    
                     
          # after looping through all negativ pairs add the best neg pairs to our dataset          
         if (single_pair != []) :
@@ -166,7 +191,7 @@ def readInList(listAllVids, path):
 
 
 def writeOutPairs(epoch, listPairNames, destination):
-    fileName = destination + "pairs_at_epoch_"+ epoch + ".txt"
+    fileName = destination + "pairs_at_epoch_"+ str(epoch) + ".txt"
     
     f = open(fileName, 'w')
     for i in range(len(listPairNames)):
@@ -196,9 +221,17 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
     for i in range(epochs):
         print("\nEpoch %d/%d" %(i+1,epochs))
         #get training data and labels
-        embedded_tr_vids = lip_auth.lipAuth_embedding.predict(tr_framesList)
+        
+        embedded_tr_vids = []
+        for vid in tr_framesList:
+            
+            embedded_tr_vid = lip_auth.lipAuth_embedding.predict(vid[np.newaxis])
+            
+            embedded_tr_vids.append(embedded_tr_vid)
+            
+        
         tr_pairs, tr_labels, tr_vidNames, tr_01_labels = get_closest_pairs(
-                embedded_tr_vids, tr_labelsList, tr_namesList)
+                embedded_tr_vids, tr_labelsList, tr_namesList, tr_framesList)
         
         writeOutPairs(i, tr_namesList, destination)
         # get number training examples
@@ -209,6 +242,8 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
      
         for j in bar: # assumes batch size of 1
             bar.set_description('%d/%d'%(j,n_examples))
+            
+            
             loss += lip_auth.lipAuth.train_on_batch([np.array(tr_pairs[0][j]), \
                 np.array(tr_pairs[1][j])], np.array([tr_01_labels[j]]))
             bar.set_postfix(loss=loss/float(j+1))
@@ -330,24 +365,27 @@ def train(pairs, labels, validation_data, destination, epochs=1000):
 """
 
 def main():
+    
     path = '/Users/Carrie/Desktop/xm2demo/mats_75/'
-    destination = "/Users/Carrie/git/LipAuth/test_10ppl_retrainingAfterLayer14/"
-    epochs = 100
+    destination = "/Users/Carrie/git/LipAuth/Sept2018/test_10ppl_proofConcept/"
+    epochs = 1
     
-    listallVids = ""
+    listAllVids = "training.txt"
+    evalData = "validation.txt"
+    
+    EER_at_low_val, threshold_at_low_val, epoch_at_low_val= train(listAllVids, evalData, path, destination, epochs=epochs)
     
     
-    best_EER, best_threshold, best_epoch = train(pairs, labels, validation_data, \
-                                                 checkpointFile, destination, epochs=epochs)
+    
     
     #best_EER, best_threshold, best_epoch = train([pairs[0][:20], pairs[0][:20]], \
     #                                             labels[:20], ([validation_data[0][0][:10],\
     #                                validation_data[0][1][:10]], validation_data[1][:10]),\
     #            checkpointFile, destination, epochs=3)
     
-    print("Final Best EER: ", best_EER)
-    print("Final Best Threshold: ", best_threshold)
-    print("Final Best Epoch: ", best_epoch )
+    print("EER at low val: ", EER_at_low_val)
+    print("threshold : ", threshold_at_low_val)
+    print("Epoch: ", epoch_at_low_val )
     
     
     """

@@ -15,10 +15,10 @@ from keras.layers.wrappers import Bidirectional
 from keras.layers import Input, Lambda, Dense
 from keras import backend as K
 from keras.optimizers import SGD
-#import keras
+import keras
 
 #keras.backend.set_image_data_format('channels_last')
-#print(keras.backend.image_data_format())
+print(keras.backend.image_data_format())
 
 
 class LipAuth(object):
@@ -53,6 +53,7 @@ class LipAuth(object):
         #self.lipAuth.compile(loss='binary_crossentropy', optimizer='adam')
         self.lipAuth.compile(loss='binary_crossentropy', optimizer=sgd)
 
+
  # this is used when retraining lipnet layers from conv3 onwards  
     def buildEmbeddingModel(self):
         lipnet = LipNet(img_c= self.img_c, img_w= self.img_w, img_h= self.img_h,\
@@ -63,25 +64,39 @@ class LipAuth(object):
         
         lipnet.model.summary()
               
-        model = Model(lipnet.model.get_layer('the_input').input, \
-                      lipnet.model.get_layer('bidirectional_2').output)
+#        model = Model(lipnet.model.get_layer('the_input').input, \
+#                      lipnet.model.get_layer('bidirectional_2').output)
+#        
+#        # Freeze all layers up to conv3 and compile the model
+#        numLayersToFreeze = 14
+#        counter = 0
+#            if counter < numLayersToFreeze:
+#        for layer in model.layers:
+#                
+#                layer.trainable = False
+#
+#                
+#                print(counter)
+#            counter +=1
+# 
         
-        # Freeze all layers up to conv3 and compile the model
-        numLayersToFreeze = 14
+        # we want to freeze all layers up to the bi-directional layer
+        # removing the bidirectional layer and adding our own 
+        model = Model(lipnet.model.get_layer('the_input').input, \
+                      lipnet.model.get_layer('time_distributed_1').output)
+        
         counter = 0
         for layer in model.layers:
-            if counter < numLayersToFreeze:
-                
-                layer.trainable = False
-
-                
-                print(counter)
+            layer.trainable = False
             counter +=1
+
+    
+    
     
     
         x = model.output
         x = Bidirectional(GRU(128, return_sequences=False, \
-                    kernel_initializer='Orthogonal', name='gru3'), merge_mode='concat')(x)
+                    kernel_initializer='Orthogonal', name='gru1'), merge_mode='concat')(x)
         
         self.lipAuth_embedding = Model(model.input, x)
         self.lipAuth_embedding.summary()
