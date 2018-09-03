@@ -240,21 +240,26 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
         loss = 0
         val_loss = 0
      
+        print("n_examples: ", n_examples)
+        print("tr_pairs length: ", len(tr_pairs))
+        print("tr_pairs[0] length: ", len(tr_pairs[0]))
+        print("shape tr_pairs[0][0] : ", tr_pairs[0][0].shape )
+        
         for j in bar: # assumes batch size of 1
             bar.set_description('%d/%d'%(j,n_examples))
             
             
-            loss += lip_auth.lipAuth.train_on_batch([np.array(tr_pairs[0][j]), \
-                np.array(tr_pairs[1][j])], np.array([tr_01_labels[j]]))
+            loss += lip_auth.lipAuth.train_on_batch([np.array(tr_pairs[j][0]), \
+                np.array(tr_pairs[j][1])], np.array([tr_01_labels[j]]))
             bar.set_postfix(loss=loss/float(j+1))
         
         scores = []
         for k in range(num_val_examples):
-            val_loss += lip_auth.lipAuth.test_on_batch([np.array(val_pairs[0][k]), \
-                                                        np.array(val_pairs[1][k])], \
+            val_loss += lip_auth.lipAuth.test_on_batch([np.array(val_pairs[k][0]), \
+                                                        np.array(val_pairs[k][1])], \
                                                        np.array([val_labels[k]]))
-            pred = lip_auth.lipAuth.predict_on_batch([np.array(val_pairs[0][k]), \
-                                                        np.array(val_pairs[1][k])])
+            pred = lip_auth.lipAuth.predict_on_batch([np.array(val_pairs[k][0]), \
+                                                        np.array(val_pairs[k][1])])
             scores.append(pred[0][0])
     
 
@@ -368,7 +373,7 @@ def main():
     
     path = '/Users/Carrie/Desktop/xm2demo/mats_75/'
     destination = "/Users/Carrie/git/LipAuth/Sept2018/test_10ppl_proofConcept/"
-    epochs = 1
+    epochs = 3
     
     listAllVids = "training.txt"
     evalData = "validation.txt"
