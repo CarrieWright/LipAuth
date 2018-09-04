@@ -213,7 +213,7 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
     
 
     # setting loss to really big number so the start will be lower
-    best_loss = np.inf
+    loss_at_lowestEER = np.inf
     EER_at_low_val = np.inf
     epoch_at_low_val = 0
     threshold_at_low_val = 0
@@ -255,11 +255,11 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
         
         scores = []
         for k in range(num_val_examples):
-            val_loss += lip_auth.lipAuth.test_on_batch([np.array(val_pairs[k][0]), \
-                                                        np.array(val_pairs[k][1])], \
+            val_loss += lip_auth.lipAuth.test_on_batch([np.array(val_pairs[0][k]), \
+                                                        np.array(val_pairs[1][k])], \
                                                        np.array([val_labels[k]]))
-            pred = lip_auth.lipAuth.predict_on_batch([np.array(val_pairs[k][0]), \
-                                                        np.array(val_pairs[k][1])])
+            pred = lip_auth.lipAuth.predict_on_batch([np.array(val_pairs[0][k]), \
+                                                        np.array(val_pairs[1][k])])
             scores.append(pred[0][0])
     
 
@@ -274,19 +274,21 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
         print("Threshold = ", threshold)
         
         
-        if val_loss/float(num_val_examples) < best_loss:
-            best_loss = val_loss/float(num_val_examples)
-            print("validation loss decreased ... EER changed from : ", EER, " to : ", EER_at_low_val)
+        if EER < EER_at_low_val:
             
+            print("EER  decreased ... EER changed from : ", EER_at_low_val, " to : ", EER)
+            print("validation loss at lowest EER ... changed from : ", loss_at_lowestEER, " to : ", val_loss )
+            
+            loss_at_lowestEER = val_loss/float(num_val_examples)   
             EER_at_low_val = EER
             epoch_at_low_val = i+1
             threshold_at_low_val = threshold
-
+            
             
             name = destination + "weights_for_lipAuthModel_EER_" + str(EER_at_low_val) + \
             "_threshold_" + str(threshold_at_low_val) + "_atEpch" + str(epoch_at_low_val) +".h5"
+            
             lip_auth.lipAuth.save_weights(name)
-
 
 
     return EER_at_low_val, threshold_at_low_val, epoch_at_low_val
@@ -295,79 +297,6 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
         
     
     
-    #
-    #
-    #
-    
-    
-    
-    
-"""
-
-def train(pairs, labels, validation_data, destination, epochs=1000):
-
-    lip_auth = LipAuth(weight_path='/Users/Carrie/git/LipNet/evaluation/models/unseen-weights178.h5')
-  
-    #callbacks = [ModelCheckpoint(checkpointFile, save_best_only=True, save_weights_only=True)]
-
-    
-    # setting loss to really big number so the start will be lower
-    n_examples = len(labels)
-    n_val_examples = len(validation_data[1])
-    best_loss = np.inf
-    EER_at_low_val = np.inf
-    epoch_at_low_val = 0
-    threshold_at_low_val = 0
-    for i in range(epochs):
-        print("\nEpoch %d/%d" %(i+1,epochs))
-        bar = tqdm(range(nt_examples))
-        loss = 0
-        val_loss = 0
-        for j in bar: # assumes batch size of 1
-            bar.set_description('%d/%d'%(j,n_examples))
-            loss += lip_auth.lipAuth.train_on_batch([np.array(pairs[0][j]), \
-                np.array(pairs[1][j])], np.array([labels[j]]))
-            bar.set_postfix(loss=loss/float(j+1))
-        
-        scores = []
-        for k in range(n_val_examples):
-            val_loss += lip_auth.lipAuth.test_on_batch([np.array(validation_data[0][0][k]), \
-                                                        np.array(validation_data[0][1][k])], \
-                                                       np.array([validation_data[1][k]]))
-            pred = lip_auth.lipAuth.predict_on_batch([np.array(validation_data[0][0][k]), \
-                                                        np.array(validation_data[0][1][k])])
-            scores.append(pred[0][0])
-
-        FPR, TPR, thresholds = roc_curve(np.array(validation_data[1]), np.array(scores))   
-        EER = brentq(lambda x : 1. - x - interp1d(FPR, TPR)(x), 0., 1.)
-        threshold = interp1d(FPR, thresholds)(EER)
-
-                
-                
-        print('validation loss : %.3lf' % (val_loss/float(n_val_examples)))
-        print("EER = ", EER)
-        print("Threshold = ", threshold)
-        
-        
-        if val_loss/float(n_val_examples) < best_loss:
-            best_loss = val_loss/float(n_val_examples)
-            print("validation loss decreased ... EER changed from : ", EER, " to : ", EER_at_low_val)
-            
-            EER_at_low_val = EER
-            epoch_at_low_val = i+1
-            threshold_at_low_val = threshold
-
-            
-            name = destination + "weights_for_lipAuthModel_EER_" + str(EER_at_low_val) + \
-            "_threshold_" + str(threshold_at_low_val) + "_atEpch" + str(epoch_at_low_val) +".h5"
-            lip_auth.lipAuth.save_weights(name)
-
-
-
-    return EER_at_low_val, threshold_at_low_val, epoch_at_low_val
-
-
-"""
 
 def main():
     
