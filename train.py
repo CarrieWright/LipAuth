@@ -43,20 +43,27 @@ def get_pairs(path, vidListFile):
     return pairs, labels
 
 
+
+
+
+
+
+
+
 def get_closest_pairs(embedded_vids, embedded_labels, vidNames, orig_vids):
     # embedded_vids is 128 embedding by num vids and labels (embedded_labels) to match
     # num_closest_negatives = number of negavtive examples per postive example
 
-    final_pairs = []
+    final_pairs1 = []
+    final_pairs2 = []
     final_labels = []
     final_vidNames = []
     final_01_labels = []
     
     embedded_vids = np.array(embedded_vids)
     embedded_vids = np.squeeze(embedded_vids)
-    #print("embedded vid shape: :", embedded_vids.shape)
-    embedded_labels = np.array(embedded_labels)
     
+    embedded_labels = np.array(embedded_labels)
     embedded_vidNames = np.array(vidNames)
     
     
@@ -69,8 +76,10 @@ def get_closest_pairs(embedded_vids, embedded_labels, vidNames, orig_vids):
     stacked_labels = np.stack([embedded_labels[ind1], embedded_labels[ind2]])
     stacked_vidNames = np.stack([embedded_vidNames[ind1], embedded_vidNames[ind2]])
     
+    #euclidean distance between every pair
     # distances is a vector containing the distances between every pair
     distances = np.linalg.norm(np.linalg.norm(stacked, axis=0), axis=1)
+    
     
     # get all positive indicies
     positive_ind = np.where(np.array(stacked_labels[0]) == np.array(stacked_labels[1]) )
@@ -82,6 +91,7 @@ def get_closest_pairs(embedded_vids, embedded_labels, vidNames, orig_vids):
     neg_ind = np.where(np.array(stacked_labels[0]) != np.array(stacked_labels[1]))
     print("number of possible negative examples = ", len(neg_ind[0]))
     
+    
     # positive_ind+neg_ind (should = ) = total num possible pairs (len(ind1))
     for i in range(len(positive_ind[0])):
  #       print("length of list currently = ", len(final_pairs))
@@ -89,13 +99,20 @@ def get_closest_pairs(embedded_vids, embedded_labels, vidNames, orig_vids):
         ind_val = positive_ind[0][i]
 #        print("positive index value : ", ind_val)
         
+        # getting the actual video name
         currentVid1 = stacked_vidNames[0][ind_val]
         currentVid2 = stacked_vidNames[1][ind_val]
         
+        # getting the index on the actual video in the original video list
         currentVid1indexNameList= vidNames.index(currentVid1.strip())
         currentVid2indexNameList= vidNames.index(currentVid2.strip())
         
-        final_pairs.append([orig_vids[currentVid1indexNameList][np.newaxis], orig_vids[currentVid2indexNameList][np.newaxis]])
+        #add the actual video to the final_pairs list
+        #final_pairs2.append([orig_vids[currentVid2indexNameList][np.newaxis]])
+        #final_pairs1.append([orig_vids[currentVid1indexNameList][np.newaxis]]) 
+        final_pairs1.append([orig_vids[currentVid1indexNameList]]) 
+        final_pairs2.append([orig_vids[currentVid2indexNameList]])
+        
         
         #final_pairs.append([stacked[0][ind_val], stacked[1][ind_val]])
         final_labels.append([stacked_labels[0][ind_val ], stacked_labels[1][ind_val]])
@@ -103,7 +120,8 @@ def get_closest_pairs(embedded_vids, embedded_labels, vidNames, orig_vids):
         final_01_labels.append(1)
         
         closest_dist = np.inf
-        single_pair = []
+        single_pair1 = []
+        single_pair2 = []
         single_labels = []
         single_vidNames = []
         
@@ -148,8 +166,9 @@ def get_closest_pairs(embedded_vids, embedded_labels, vidNames, orig_vids):
                     indiciesOfVid1 = vidNames.index(single_vidNames[0].strip())
                     indiciesOfVid2 = vidNames.index(single_vidNames[1].strip())
                     
-                    single_pair = [orig_vids[indiciesOfVid1][np.newaxis], orig_vids[indiciesOfVid2][np.newaxis]]
-                    
+                    #single_pair1 = [orig_vids[indiciesOfVid1][np.newaxis], orig_vids[indiciesOfVid2][np.newaxis]]
+                    single_pair1 = orig_vids[indiciesOfVid1]
+                    single_pair2 = orig_vids[indiciesOfVid2]
                     
                     
                     
@@ -157,15 +176,17 @@ def get_closest_pairs(embedded_vids, embedded_labels, vidNames, orig_vids):
                     
                     
          # after looping through all negativ pairs add the best neg pairs to our dataset          
-        if (single_pair != []) :
-            final_pairs.append(single_pair)
+        if (single_pair1 != []) :
+            final_pairs1.append([single_pair1])
+            final_pairs2.append([single_pair2])
             final_labels.append(single_labels)  
             final_vidNames.append(single_vidNames)
             final_01_labels.append(0)
         else :
             print("WARNING - NO NEGATIVE EXAMPLE FOR VIDEO : ", currentVid1)
         
-        
+    
+    final_pairs = [final_pairs1, final_pairs2]
     print("final pairs length : ", len(final_pairs))    
     print("final labels length : ", len(final_labels)) 
     print("final vidNames length : ", len(final_vidNames))     
@@ -201,12 +222,12 @@ def writeOutPairs(epoch, listPairNames, destination):
     
     
 
-def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000):
+def train(listAllTrainingVids, listValidationData, pathToVids, destination, epochs=1000):
     
     lip_auth = LipAuth(weight_path='/Users/Carrie/git/LipNet/evaluation/models/unseen-weights178.h5')
     
     # raw vid data not in pairs
-    tr_framesList, tr_namesList, tr_labelsList = readInList(listAllVids, pathToVids)
+    tr_framesList, tr_namesList, tr_labelsList = readInList(listAllTrainingVids, pathToVids)
     # validation data
     val_pairs, val_labels = get_pairs(pathToVids, listValidationData)
     num_val_examples = len(val_labels)
@@ -243,14 +264,13 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
         print("n_examples: ", n_examples)
         print("tr_pairs length: ", len(tr_pairs))
         print("tr_pairs[0] length: ", len(tr_pairs[0]))
-        print("shape tr_pairs[0][0] : ", tr_pairs[0][0].shape )
         
         for j in bar: # assumes batch size of 1
             bar.set_description('%d/%d'%(j,n_examples))
             
             
-            loss += lip_auth.lipAuth.train_on_batch([np.array(tr_pairs[j][0]), \
-                np.array(tr_pairs[j][1])], np.array([tr_01_labels[j]]))
+            loss += lip_auth.lipAuth.train_on_batch([np.array(tr_pairs[0][j]), \
+                np.array(tr_pairs[1][j])], np.array([tr_01_labels[j]]))
             bar.set_postfix(loss=loss/float(j+1))
         
         scores = []
@@ -301,8 +321,8 @@ def train(listAllVids, listValidationData, pathToVids, destination, epochs=1000)
 def main():
     
     path = '/Users/Carrie/Desktop/xm2demo/mats_75/'
-    destination = "/Users/Carrie/git/LipAuth/Sept2018/test_10ppl_proofConcept/"
-    epochs = 3
+    destination = "/Users/Carrie/git/LipAuth/Sept2018/test_10ppl_proofConcept2_100epoch/"
+    epochs = 100
     
     listAllVids = "training.txt"
     evalData = "validation.txt"
