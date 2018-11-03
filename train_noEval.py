@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Oct 29 21:01:02 2018
+
+@author: 691459
+"""
+
 import numpy as np
 import scipy.io as sio
 
@@ -222,23 +229,13 @@ def writeOutPairs(epoch, listPairNames, destination):
     
     
 
-def train(listAllTrainingVids, listValidationData, pathToVids, destination, weight_path, epochs=1000):
+def train(listAllTrainingVids, pathToVids, destination, weight_path, epochs=1000):
     
     lip_auth = LipAuth(weight_path=weight_path)
     
     # raw vid data not in pairs
-    tr_framesList, tr_namesList, tr_labelsList = readInList(listAllTrainingVids, pathToVids)
-    # validation data
-    val_pairs, val_labels = get_pairs(pathToVids, listValidationData)
-    num_val_examples = len(val_labels)
-    print "num evaluation videos: ", num_val_examples
-    
+    tr_framesList, tr_namesList, tr_labelsList = readInList(listAllTrainingVids, pathToVids)    
 
-    # setting loss to really big number so the start will be lower
-    loss_at_lowestEER = np.inf
-    EER_at_low_val = np.inf
-    epoch_at_low_val = 0
-    threshold_at_low_val = 0
     
     for i in range(epochs):
         print("\nEpoch %d/%d" %(i+1,epochs))
@@ -260,7 +257,6 @@ def train(listAllTrainingVids, listValidationData, pathToVids, destination, weig
         n_examples = len(tr_labels)
         bar = tqdm(range(n_examples))
         loss = 0
-        val_loss = 0
      
         print("n_examples: ", n_examples)
         print("tr_pairs length: ", len(tr_pairs))
@@ -272,47 +268,83 @@ def train(listAllTrainingVids, listValidationData, pathToVids, destination, weig
             
             loss += lip_auth.lipAuth.train_on_batch([np.array(tr_pairs[0][j]), \
                 np.array(tr_pairs[1][j])], np.array([tr_01_labels[j]]))
-            bar.set_postfix(loss=loss/float(j+1))
-        
-        scores = []
-        for k in range(num_val_examples):
-            val_loss += lip_auth.lipAuth.test_on_batch([np.array(val_pairs[0][k]), \
-                                                        np.array(val_pairs[1][k])], \
-                                                       np.array([val_labels[k]]))
-            pred = lip_auth.lipAuth.predict_on_batch([np.array(val_pairs[0][k]), \
-                                                        np.array(val_pairs[1][k])])
-            scores.append(pred[0][0])
-    
-
-        FPR, TPR, thresholds = roc_curve(np.array(val_labels), np.array(scores))   
-        EER = brentq(lambda x : 1. - x - interp1d(FPR, TPR)(x), 0., 1.)
-        threshold = interp1d(FPR, thresholds)(EER)
-
+            bar.set_postfix(loss=loss/float(j+1))              
                 
-                
-        print('validation loss : %.3lf' % (val_loss/float(num_val_examples)))
-        print("EER = ", EER)
-        print("Threshold = ", threshold)
-        
-        
-        if EER < EER_at_low_val:
-            
-            print("EER  decreased ... EER changed from : ", EER_at_low_val, " to : ", EER)
-            print("validation loss at lowest EER ... changed from : ", loss_at_lowestEER, " to : ", val_loss )
-            
-            loss_at_lowestEER = val_loss/float(num_val_examples)   
-            EER_at_low_val = EER
-            epoch_at_low_val = i+1
-            threshold_at_low_val = threshold
-            
-            
-            name = destination + "weights_for_lipAuthModel_EER_" + str(EER_at_low_val) + \
-            "_threshold_" + str(threshold_at_low_val) + "_atEpch" + str(epoch_at_low_val) +".h5"
-            
+        e = i+1
+        if e <= 10:            
+            print "at epoch: ", str(e), " saving model "
+            name = destination + "weights_for_lipAuthModel_Epoch_" + str(e) +".h5"   
             lip_auth.lipAuth.save_weights(name)
+        
+        elif e%2==0:
+            print "at epoch: ", str(e), " saving model "
+            name = destination + "weights_for_lipAuthModel_Epoch_" + str(e) +".h5"   
+            lip_auth.lipAuth.save_weights(name)
+            
 
 
-    return EER_at_low_val, threshold_at_low_val, epoch_at_low_val
+    return True
+
+
+
+
+
+def train_more(listAllTrainingVids, pathToVids, destination, weight_path, lastcheckpoint, lastepoch, epochs=1000):
+    
+    lip_auth = LipAuth(weight_path=weight_path)
+    lip_auth.lipAuth.load_weights(lastcheckpoint)
+    
+    # raw vid data not in pairs
+    tr_framesList, tr_namesList, tr_labelsList = readInList(listAllTrainingVids, pathToVids)    
+
+    
+    for i in range(lastepoch, epochs):
+        print("\nEpoch %d/%d" %(i+1,epochs))
+        #get training data and labels
+        
+        embedded_tr_vids = []
+        for vid in tr_framesList:
+            
+            embedded_tr_vid = lip_auth.lipAuth_embedding.predict(vid[np.newaxis])
+            
+            embedded_tr_vids.append(embedded_tr_vid)
+            
+        
+        tr_pairs, tr_labels, tr_vidNames, tr_01_labels = get_closest_pairs(
+                embedded_tr_vids, tr_labelsList, tr_namesList, tr_framesList)
+        
+        writeOutPairs(i, tr_namesList, destination)
+        # get number training examples
+        n_examples = len(tr_labels)
+        bar = tqdm(range(n_examples))
+        loss = 0
+     
+        print("n_examples: ", n_examples)
+        print("tr_pairs length: ", len(tr_pairs))
+        print("tr_pairs[0] length: ", len(tr_pairs[0]))
+        
+        for j in bar: # assumes batch size of 1
+            bar.set_description('%d/%d'%(j,n_examples))
+            
+            
+            loss += lip_auth.lipAuth.train_on_batch([np.array(tr_pairs[0][j]), \
+                np.array(tr_pairs[1][j])], np.array([tr_01_labels[j]]))
+            bar.set_postfix(loss=loss/float(j+1))              
+                
+        e = i+1
+        if e <= 10:            
+            print "at epoch: ", str(e), " saving model "
+            name = destination + "weights_for_lipAuthModel_Epoch_" + str(e) +".h5"   
+            lip_auth.lipAuth.save_weights(name)
+        
+        elif e%2==0:
+            print "at epoch: ", str(e), " saving model "
+            name = destination + "weights_for_lipAuthModel_Epoch_" + str(e) +".h5"   
+            lip_auth.lipAuth.save_weights(name)
+            
+
+
+    return True
 
     
         
@@ -322,24 +354,18 @@ def train(listAllTrainingVids, listValidationData, pathToVids, destination, weig
 def main():
     
     weight_path = '/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/lipnet/unseen-weights178.h5'
-    path = '/mnt/lvm/bigscratch/users/691459/Carrie/files50_100/'
+    checkpoint_file = '/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/snapshots/weights_for_lipAuthModel_Epoch_38.h5'  
+    vid_path = '/mnt/lvm/bigscratch/users/691459/Carrie/files50_100/'
     destination = "/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/snapshots/"
-    epochs = 5000
+    epochs = 1000
     
-    #listAllVids = "/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/776training_194x4mats.txt"
-    listAllVids = "/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/10ppl_40vid_xm2_s1s2_mats.txt"
-    #evalData = "/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/548eval_194x2_20x8mats.txt"
-    evalData = "/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/10ppl_20vid_xm2_s3_mats.txt"
-
+    listAllVids = "/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/776training_194x4mats.txt"
+    #listAllVids = "/mnt/lvm/bigscratch/users/691459/Carrie/LipAuth/10ppl_40vid_xm2_s1s2_mats.txt"
     
-    EER_at_low_val, threshold_at_low_val, epoch_at_low_val= train(listAllVids, evalData, path, destination, weight_path, epochs=epochs)
+    lastepoch = 38 
+    train_more(listAllVids, vid_path, destination, weight_path, checkpoint_file, lastepoch, epochs=epochs) 
     
-    
-    
-    
-    print("EER at low val: ", EER_at_low_val)
-    print("threshold : ", threshold_at_low_val)
-    print("Epoch: ", epoch_at_low_val )
+    print("Finished Training")
     
     
 

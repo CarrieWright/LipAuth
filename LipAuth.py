@@ -8,6 +8,7 @@ Created on Thu Mar 22 22:29:39 2018
 import scipy.io as sio
 import numpy as np
 
+#from lipnet.model2 import LipNet
 from lipnet.model2 import LipNet
 from keras.models import Model, load_model
 from keras.layers.recurrent import GRU
